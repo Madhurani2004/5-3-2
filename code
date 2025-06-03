@@ -230,7 +230,7 @@ class Game532:
         
         # Game setup phase
         self.deal_cards()  # Deal cards to all players
-        self.choose_trump_suit()  # Let Player 1 choose trump suit
+        self.choose_trump_suit()  # Let a random player choose trump suit
         
         # Main game loop - play up to 10 rounds
         for round_num in range(1, 11):
@@ -259,12 +259,12 @@ class Game532:
             print(f"\n🤝 GAME ENDS IN A TIE! 🤝")
             print(f"Winners: {', '.join(winners)} with {max_wins} rounds each!")
 
-def start_new_game():
-    """Convenience function to start a new game"""
+def start_game_532():
+    """Function to start a new 5-3-2 card game"""
     game = Game532()
     game.play_game()
     return game  # Return game object in case you want to access final stats
 
-# Main execution block
-if __name__ == "__main__":
-    start_new_game()
+# This is the line that needs to be present to make the code run when executed.
+# It calls the function to start the game.
+start_game_532()
