@@ -1,0 +1,270 @@
+import random
+
+class Card:
+    """Class to represent a playing card"""
+    
+    def __init__(self, suit, rank):
+        self.suit = suit  # Store the suit of the card (♠, ♥, ♦, ♣)
+        self.rank = rank  # Store the rank of the card (2-10, J, Q, K, A)
+    
+    def __str__(self):
+        # Return string representation of card with suit symbol and rank
+        return f"{self.rank}{self.suit}"
+    
+    def get_value(self):
+        # Return numerical value of card for comparison (Ace=14, King=13, Queen=12, Jack=11)
+        if self.rank == 'A':
+            return 14
+        elif self.rank == 'K':
+            return 13
+        elif self.rank == 'Q':
+            return 12
+        elif self.rank == 'J':
+            return 11
+        else:
+            return int(self.rank)  # For cards 2-10, return the number directly
+
+class Game532:
+    """Main game class for 5-3-2 card game"""
+    
+    def __init__(self):
+        # Initialize game with three players
+        self.players = ['Player 1', 'Player 2', 'Player 3']
+        # Initialize hands for each player (empty lists)
+        self.hands = {player: [] for player in self.players}
+        # Initialize wins counter for each player
+        self.wins = {player: 0 for player in self.players}
+        # Trump suit will be determined later
+        self.trump_suit = None
+        # Track current first player for each round (winner of previous round plays first)
+        self.current_first_player = 0  # Start with Player 1 (index 0)
+        # Create deck of cards with suit symbols
+        self.suits = ['♠', '♥', '♦', '♣']  # Spades, Hearts, Diamonds, Clubs
+        self.ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        # Create and shuffle the deck
+        self.create_deck()
+        
+    def create_deck(self):
+        """Create a standard 52-card deck"""
+        self.deck = []  # Initialize empty deck
+        # Create all combinations of suits and ranks
+        for suit in self.suits:
+            for rank in self.ranks:
+                self.deck.append(Card(suit, rank))  # Add each card to deck
+        random.shuffle(self.deck)  # Randomly shuffle the deck
+    
+    def deal_cards(self):
+        """Deal 10 cards to each of the 3 players"""
+        print("Dealing cards to players...")
+        print("=" * 50)
+        
+        # Deal 10 cards to each player
+        for i in range(10):
+            for player in self.players:
+                # Remove card from deck and add to player's hand
+                card = self.deck.pop()
+                self.hands[player].append(card)
+        
+        # Sort each player's hand by suit and then by value for better organization
+        for player in self.players:
+            self.hands[player].sort(key=lambda x: (x.suit, x.get_value()))
+        
+        # Display each player's cards (trump suit not selected yet, so no trump labels)
+        for player in self.players:
+            print(f"\n{player}'s cards:")
+            # Display cards with index numbers for easy selection
+            for i, card in enumerate(self.hands[player], 1):
+                print(f"{i:2d}. {card}")
+    
+    def choose_trump_suit(self):
+        """Randomly select a player to choose the trump suit"""
+        print("\n" + "=" * 50)
+        print("TRUMP SUIT SELECTION")
+        print("=" * 50)
+        
+        # Randomly select which player will choose trump suit
+        trump_chooser_index = random.randint(0, 2)
+        trump_chooser = self.players[trump_chooser_index]
+        print(f"Random selection: {trump_chooser} will choose the trump suit!")
+        
+        # Display available suits with symbols
+        print("\nAvailable suits:")
+        for i, suit in enumerate(self.suits, 1):
+            print(f"{i}. {suit}")
+        
+        # Get trump suit choice from the selected player
+        while True:
+            try:
+                choice = int(input(f"\n{trump_chooser}, choose trump suit (1-4): "))
+                if 1 <= choice <= 4:
+                    self.trump_suit = self.suits[choice - 1]  # Set trump suit based on choice
+                    break
+                else:
+                    print("Invalid choice! Please enter 1, 2, 3, or 4.")
+            except ValueError:
+                print("Invalid input! Please enter a number.")
+        
+        print(f"\nTrump suit selected: {self.trump_suit}")
+        print("Trump cards will be marked with (TRUMP) label")
+        print("=" * 50)
+    
+    def display_hand(self, player):
+        """Display a player's current hand with index numbers"""
+        print(f"\n{player}'s remaining cards:")
+        # Show each card with its index for selection
+        for i, card in enumerate(self.hands[player], 1):
+            # Add TRUMP label for trump suit cards
+            trump_label = " (TRUMP)" if card.suit == self.trump_suit else ""
+            print(f"{i:2d}. {card}{trump_label}")
+    
+    def get_card_choice(self, player):
+        """Get card selection from a player"""
+        self.display_hand(player)  # Show player's current cards
+        
+        while True:
+            try:
+                # Get card choice from player
+                choice = int(input(f"\n{player}, choose a card (1-{len(self.hands[player])}): "))
+                if 1 <= choice <= len(self.hands[player]):
+                    # Return the selected card and remove it from hand
+                    return self.hands[player].pop(choice - 1)
+                else:
+                    print(f"Invalid choice! Please enter a number between 1 and {len(self.hands[player])}.")
+            except ValueError:
+                print("Invalid input! Please enter a number.")
+    
+    def determine_winner(self, cards_played, lead_suit):
+        """Determine the winner of a round based on cards played"""
+        max_value = -1  # Initialize maximum value
+        winner_index = 0  # Initialize winner index
+        
+        # Check each card played in the round
+        for i, (player, card) in enumerate(cards_played):
+            card_value = card.get_value()  # Get numerical value of card
+            
+            # Trump cards have priority over non-trump cards
+            if card.suit == self.trump_suit:
+                card_value += 100  # Add bonus points for trump cards
+            # Cards of lead suit have priority over off-suit cards (but not trump)
+            elif card.suit == lead_suit:
+                card_value += 50  # Add bonus points for following suit
+            
+            # Update winner if this card has higher value
+            if card_value > max_value:
+                max_value = card_value
+                winner_index = i
+        
+        # Return the winning player's name
+        return cards_played[winner_index][0]
+    
+    def play_round(self, round_num):
+        """Play a single round of the game"""
+        print(f"\n{'='*20} ROUND {round_num} {'='*20}")
+        
+        # Create playing order starting with current first player
+        playing_order = []
+        for i in range(3):
+            player_index = (self.current_first_player + i) % 3
+            playing_order.append(self.players[player_index])
+        
+        print(f"Playing order: {' → '.join(playing_order)}")
+        
+        cards_played = []  # List to store cards played in this round
+        lead_suit = None  # The suit of the first card played
+        
+        # Each player plays one card in the determined order
+        for i, player in enumerate(playing_order):
+            print(f"\n--- {player}'s turn ---")
+            card = self.get_card_choice(player)  # Get player's card choice
+            cards_played.append((player, card))  # Store player and card played
+            
+            # First card determines the lead suit
+            if i == 0:
+                lead_suit = card.suit
+                print(f"{player} leads with {card} (Lead suit: {lead_suit})")
+            else:
+                print(f"{player} plays {card}")
+        
+        # Display all cards played in this round
+        print(f"\nCards played this round:")
+        for player, card in cards_played:
+            trump_indicator = " (TRUMP)" if card.suit == self.trump_suit else ""
+            lead_indicator = " (LEAD SUIT)" if card.suit == lead_suit and card.suit != self.trump_suit else ""
+            print(f"  {player}: {card}{trump_indicator}{lead_indicator}")
+        
+        # Determine and announce the winner
+        winner = self.determine_winner(cards_played, lead_suit)
+        self.wins[winner] += 1  # Increment winner's round count
+        print(f"\n🏆 {winner} wins this round!")
+        
+        # Update first player for next round (winner plays first next time)
+        self.current_first_player = self.players.index(winner)
+        if round_num < 10:  # Don't show next round info if it's the last round
+            print(f"📋 {winner} will play first in the next round")
+        
+        # Display current standings
+        print(f"\nCurrent wins: ", end="")
+        win_display = []  # List to format win display
+        for player in self.players:
+            win_display.append(f"{player}: {self.wins[player]}")
+        print(" | ".join(win_display))
+    
+    def check_game_winner(self):
+        """Check if game is complete and determine winner"""
+        # Check if any player has won 5 rounds (majority of 10 rounds)
+        for player in self.players:
+            if self.wins[player] >= 5:
+                return player
+        return None  # No winner yet
+    
+    def play_game(self):
+        """Main method to run the complete game"""
+        print("🎮 Welcome to 5-3-2 Card Game! 🎮")
+        print("Game Rules:")
+        print("- 3 players, 10 cards each")
+        print("- Random player chooses trump suit")
+        print("- Win 5 out of 10 rounds to win the game")
+        print("- Follow lead suit if possible, otherwise play any card")
+        print("- Trump cards beat non-trump cards")
+        print("- Round winner plays first in the next round")
+        
+        # Game setup phase
+        self.deal_cards()  # Deal cards to all players
+        self.choose_trump_suit()  # Let Player 1 choose trump suit
+        
+        # Main game loop - play up to 10 rounds
+        for round_num in range(1, 11):
+            self.play_round(round_num)  # Play each round
+            
+            # Check if someone has won 5 rounds (game over)
+            game_winner = self.check_game_winner()
+            if game_winner:
+                print(f"\n🎉 GAME OVER! 🎉")
+                print(f"🏆 {game_winner} wins the game with {self.wins[game_winner]} rounds!")
+                
+                # Display final scores
+                print(f"\nFinal Scores:")
+                for player in self.players:
+                    print(f"  {player}: {self.wins[player]} rounds")
+                return  # End the game
+        
+        # If no one won 5 rounds, declare winner based on most rounds won
+        max_wins = max(self.wins.values())
+        winners = [player for player, wins in self.wins.items() if wins == max_wins]
+        
+        if len(winners) == 1:
+            print(f"\n🎉 GAME OVER! 🎉")
+            print(f"🏆 {winners[0]} wins with {max_wins} rounds!")
+        else:
+            print(f"\n🤝 GAME ENDS IN A TIE! 🤝")
+            print(f"Winners: {', '.join(winners)} with {max_wins} rounds each!")
+
+def start_new_game():
+    """Convenience function to start a new game"""
+    game = Game532()
+    game.play_game()
+    return game  # Return game object in case you want to access final stats
+
+# Main execution block
+if __name__ == "__main__":
+    start_new_game()
